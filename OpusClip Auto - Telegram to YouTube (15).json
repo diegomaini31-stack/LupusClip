@@ -1,0 +1,1039 @@
+{
+  "name": "OpusClip Auto - Telegram to YouTube",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "=={{ $json.message.text }}",
+              "operation": "regex",
+              "value2": "(youtube\\.com|youtu\\.be)"
+            }
+          ]
+        }
+      },
+      "id": "8d0d76a9-c46c-4d1e-a4f9-7bc249fe9909",
+      "name": "Check if YouTube URL",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -2176,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "⏳ Processing your video... This may take a few minutes.",
+        "additionalFields": {}
+      },
+      "id": "32bc28ef-6cec-47fb-8c8c-7fea5189030c",
+      "name": "Reply: Processing",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1952,
+        64
+      ],
+      "webhookId": "cc27f04f-3973-4867-b311-f35590f134d2",
+      "credentials": {
+        "telegramApi": {
+          "id": "zOScoWh7pmGTDENO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "url-extract",
+              "name": "url",
+              "value": "={{ $('Telegram Trigger').item.json.message.text.match(/(https?:\\/\\/[^\\s]+)/)[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "model-set",
+              "name": "model",
+              "value": "medium",
+              "type": "string"
+            },
+            {
+              "id": "compute-set",
+              "name": "compute",
+              "value": "float16",
+              "type": "string"
+            },
+            {
+              "id": "beam-set",
+              "name": "beam",
+              "value": "5",
+              "type": "string"
+            },
+            {
+              "id": "temp-set",
+              "name": "temp",
+              "value": "0",
+              "type": "string"
+            },
+            {
+              "id": "language-set",
+              "name": "language",
+              "value": "en",
+              "type": "string"
+            },
+            {
+              "id": "vad-set",
+              "name": "vad",
+              "value": "0",
+              "type": "string"
+            },
+            {
+              "id": "wordts-set",
+              "name": "wordTs",
+              "value": "1",
+              "type": "string"
+            },
+            {
+              "id": "outdir-set",
+              "name": "outDir",
+              "value": "/work/out",
+              "type": "string"
+            },
+            {
+              "id": "useai-set",
+              "name": "useAI",
+              "value": "1",
+              "type": "string"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "=={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "string"
+            },
+            {
+              "id": "5393e9c9-401f-4a13-9a46-77ce95d83d1e",
+              "name": "aiModel",
+              "value": "gemini-2.0-flash",
+              "type": "string"
+            },
+            {
+              "id": "d6758a56-da63-4398-891f-7fc9ec9e3d19",
+              "name": "googleApiKey",
+              "value": "AIzaSyBhP2lvG1pyL6S_TZeqsI1s9VeWHckVzk0",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1728,
+        64
+      ],
+      "id": "ac2af1d2-950a-4df1-8301-fb42956d40ac",
+      "name": "Extract URL & Settings"
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm --entrypoint bash -v \"C:/whisper-gpu:/work\" whisper-gpu -lc \"rm -f /work/input.* /work/out/*.mp4 /work/out/*.srt /work/out/*.json /work/out/*.ass && echo 'Cleaned'\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        64
+      ],
+      "id": "fb1b365e-6ab1-434a-af15-35f13b370c8d",
+      "name": "1. Clean Old Files"
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm --entrypoint bash -v \"C:/whisper-gpu:/work\" whisper-gpu -lc \"yt-dlp --rm-cache-dir --extractor-args 'youtube:player_client=android' -f 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best' --merge-output-format mp4 --force-overwrites -o '/work/input.mp4' '{{ $('Extract URL & Settings').item.json.url }}'\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        64
+      ],
+      "id": "9d78523a-e64a-47c9-a507-1d1a000cebe1",
+      "name": "2. Download Video"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "lang-pass",
+              "name": "language",
+              "value": "={{ $('Extract URL & Settings').item.json.language }}",
+              "type": "string"
+            },
+            {
+              "id": "model-pass",
+              "name": "model",
+              "value": "={{ $('Extract URL & Settings').item.json.model }}",
+              "type": "string"
+            },
+            {
+              "id": "compute-pass",
+              "name": "compute",
+              "value": "={{ $('Extract URL & Settings').item.json.compute }}",
+              "type": "string"
+            },
+            {
+              "id": "beam-pass",
+              "name": "beam",
+              "value": "={{ $('Extract URL & Settings').item.json.beam }}",
+              "type": "string"
+            },
+            {
+              "id": "temp-pass",
+              "name": "temp",
+              "value": "={{ $('Extract URL & Settings').item.json.temp }}",
+              "type": "string"
+            },
+            {
+              "id": "vad-pass",
+              "name": "vad",
+              "value": "={{ $('Extract URL & Settings').item.json.vad }}",
+              "type": "string"
+            },
+            {
+              "id": "wordts-pass",
+              "name": "wordTs",
+              "value": "={{ $('Extract URL & Settings').item.json.wordTs }}",
+              "type": "string"
+            },
+            {
+              "id": "outdir-pass",
+              "name": "outDir",
+              "value": "={{ $('Extract URL & Settings').item.json.outDir }}",
+              "type": "string"
+            },
+            {
+              "id": "useai-pass",
+              "name": "useAI",
+              "value": "={{ $('Extract URL & Settings').item.json.useAI }}",
+              "type": "string"
+            },
+            {
+              "id": "cbdf0df2-3e1c-4ff3-8671-c618e4908d1c",
+              "name": "chatId",
+              "value": "={{ $('Extract URL & Settings').item.json.chatId }}",
+              "type": "string"
+            },
+            {
+              "id": "0b47efa6-cf72-4dbd-807a-f0d215aaa8af",
+              "name": "aiModel",
+              "value": "={{ $('Extract URL & Settings').item.json.aiModel }}",
+              "type": "string"
+            },
+            {
+              "id": "69d04925-ce2d-4b6b-ae72-1abde597b68a",
+              "name": "enableSentiment",
+              "value": "={{ $('Extract URL & Settings').item.json.enableSentiment }}",
+              "type": "string"
+            },
+            {
+              "id": "3fb94a10-ed8e-4985-9b26-3ab19cef50c2",
+              "name": "enableAudioAnalysis",
+              "value": "={{ $('Extract URL & Settings').item.json.enableAudioAnalysis }}",
+              "type": "string"
+            },
+            {
+              "id": "314cc52c-8b73-4e3d-a668-587f98b37fed",
+              "name": "titleVariants",
+              "value": "={{ $('Extract URL & Settings').item.json.titleVariants }}",
+              "type": "string"
+            },
+            {
+              "id": "884bcfe2-cf7f-444c-a161-585f6e27330f",
+              "name": "validateFlow",
+              "value": "={{ $('Extract URL & Settings').item.json.validateFlow }}",
+              "type": "string"
+            },
+            {
+              "id": "5ab31887-e145-493f-b233-721013c434aa",
+              "name": "enhancedAI",
+              "value": "={{ $('Extract URL & Settings').item.json.enhancedAI }}",
+              "type": "string"
+            },
+            {
+              "id": "eab8dcf2-c90b-4765-b53c-4edfa687c360",
+              "name": "enhancedFallback",
+              "value": "={{ $('Extract URL & Settings').item.json.enhancedFallback }}",
+              "type": "string"
+            },
+            {
+              "id": "b86166e3-b43c-4e6a-b3b9-9f55e084414d",
+              "name": "enhancedValidation",
+              "value": "={{ $('Extract URL & Settings').item.json.enhancedValidation }}",
+              "type": "string"
+            },
+            {
+              "id": "e097240c-50b4-4271-b53e-1f9dfa12a9a6",
+              "name": "enhancedTitles",
+              "value": "={{ $('Extract URL & Settings').item.json.enhancedTitles }}",
+              "type": "string"
+            },
+            {
+              "id": "727f65d6-2754-4a77-9eec-5f6290238da5",
+              "name": "enhancedSubtitles",
+              "value": "={{ $('Extract URL & Settings').item.json.enhancedSubtitles }}",
+              "type": "string"
+            },
+            {
+              "id": "29c249ed-ce7f-4252-bb47-ab874231a6cc",
+              "name": "minRetentionPotential",
+              "value": "={{ $('Extract URL & Settings').item.json.minRetentionPotential }}",
+              "type": "string"
+            },
+            {
+              "id": "f3ec6f04-b4e7-4c51-b7fc-4e62194e1478",
+              "name": "minValidationScore",
+              "value": "={{ $('Extract URL & Settings').item.json.minValidationScore }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -832,
+        64
+      ],
+      "id": "f96bf6f6-fa19-4ec1-9d5d-aff44f4325f1",
+      "name": "3. Prepare Params"
+    },
+    {
+      "parameters": {
+        "command": "=docker run --rm --gpus all --memory=\"32g\" --memory-swap=\"64g\" --cpus=\"8\" \\\n  -v \"C:/whisper-gpu:/work\" \\\n  -v \"C:/whisper-gpu/.cache:/root/.cache\" \\\n  --add-host=host.docker.internal:host-gateway \\\n  -e URL=\"{{ $('Extract URL & Settings').item.json.url }}\" \\\n  -e FILE=\"/work/input.mp4\" \\\n  -e LANGUAGE=\"{{ $('3. Prepare Params').item.json.language }}\" \\\n  -e MODEL=\"{{ $('3. Prepare Params').item.json.model }}\" \\\n  -e COMPUTE=\"{{ $('3. Prepare Params').item.json.compute }}\" \\\n  -e BEAM_SIZE=\"{{ $('3. Prepare Params').item.json.beam }}\" \\\n  -e TEMPERATURE=\"{{ $('3. Prepare Params').item.json.temp }}\" \\\n  -e VAD=\"{{ $('3. Prepare Params').item.json.vad }}\" \\\n  -e WORD_TS=\"{{ $('3. Prepare Params').item.json.wordTs }}\" \\\n  -e OUT_DIR=\"/work/out\" \\\n  -e USE_AI=\"1\" \\\n  -e MULTI_SEGMENT=\"1\" \\\n  -e AI_MODEL=\"{{ $('3. Prepare Params').item.json.aiModel }}\" \\\n  -e GOOGLE_API_KEY=\"{{ $('Extract URL & Settings').item.json.googleApiKey }}\" \\\n  -e AUDIO_ANALYSIS=\"{{ $('3. Prepare Params').item.json.enableAudioAnalysis }}\" \\\n  -e TARGET_SEC=\"30\" \\\n  -e MIN_SEC=\"15\" \\\n  -e MAX_SEC=\"50\" \\\n  --entrypoint python3 whisper-gpu -u /work/run.py\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        64
+      ],
+      "id": "6e6d6a71-2852-4f92-825d-2b38141fd9f0",
+      "name": "4. Transcribe + Clip"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/whisper-gpu/out/short_1080x1920.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        64
+      ],
+      "id": "58ef4ca8-e8a5-4d76-8ac9-62da5e50e731",
+      "name": "Read Video File",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $json.title }}",
+        "regionCode": "CA",
+        "categoryId": "24",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        912,
+        -96
+      ],
+      "id": "3a74928c-af81-4e9d-89fd-80c22d1609e2",
+      "name": "5. Upload to YouTube",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "uZzq9asq7o9YVq5c",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "❌ Please send a valid YouTube URL",
+        "additionalFields": {}
+      },
+      "id": "e4b38cd9-7ab5-4da4-8289-c724f840429d",
+      "name": "Reply: Invalid URL",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1952,
+        256
+      ],
+      "webhookId": "74f89214-3f96-4c35-8bd4-80a94afb1f98",
+      "credentials": {
+        "telegramApi": {
+          "id": "zOScoWh7pmGTDENO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2384,
+        160
+      ],
+      "id": "4c009b03-3b92-48fb-a696-f74a9ca8fbb7",
+      "name": "Telegram Trigger",
+      "webhookId": "145df39c-74a9-4d3d-8cc1-3380335a3773",
+      "credentials": {
+        "telegramApi": {
+          "id": "zOScoWh7pmGTDENO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "/whisper-gpu/out/title.txt",
+        "options": {
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        112,
+        160
+      ],
+      "id": "e609b895-7a96-43f3-8f48-d963717302c0",
+      "name": "Read Title File"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "title",
+        "options": {
+          "keepSource": "json"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        256,
+        112
+      ],
+      "id": "4fff99f5-4bc8-44ee-b285-5cdd975e5ab3",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        64
+      ],
+      "id": "ee73f27b-27ea-41d4-956c-48cbf75648b6",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=✅ Videos uploaded successfully!\n\nYouTube: https://youtube.com/watch?v={{ $('5. Upload to YouTube').item.json.uploadId }}\n\nTikTok: Video published! Check your TikTok account.",
+        "additionalFields": {}
+      },
+      "id": "56dd8ab1-da2a-49aa-a37f-355b4480ac23",
+      "name": "Reply: Success (Both Platforms)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2720,
+        -32
+      ],
+      "webhookId": "10bf2cc9-2c47-4666-9d9b-abef0c9a6b49",
+      "credentials": {
+        "telegramApi": {
+          "id": "zOScoWh7pmGTDENO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2496,
+        -32
+      ],
+      "id": "bb829621-7a19-4780-893a-d7fffe770770",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "command": "docker run --rm --entrypoint bash -v \"C:/whisper-gpu:/work\" whisper-gpu -lc \"pip install -U yt-dlp\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        64
+      ],
+      "id": "f6c76879-fa23-433e-a970-6444d9e7ddce",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"accessToken\": \"act.ByxBvZKbzoXe5e4TBhzPfOtpSpxzoBEui6j7ItXXv3JlYp7Z83LEAYTQlCpE!4549.va\",\n  \"refreshToken\": \"rft.2WKs4aADUzrldjPMAzz7661pTKh0DeGmSTbuL8uHu8FwIq9FS5tlyI4cA47C!4598.va\",\n  \"clientKey\": \"sbaw4a75si3rucdqmw\",\n  \"clientSecret\": \"KRK2bTaQOHSEa5lu9Ohuqt96W1267Sat\",\n  \"videoServerUrl\": \"https://unretaliatory-postthyroidal-wilbert.ngrok-free.dev/short_1080x1920.mp4\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        336
+      ],
+      "id": "4366229d-0474-4eea-b67e-df709f0ce546",
+      "name": "TikTok Config"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/video/init/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.accessToken }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"post_info\": {\n    \"title\": $('Merge').item.json.title,\n    \"privacy_level\": \"SELF_ONLY\",\n    \"disable_duet\": false,\n    \"disable_comment\": false,\n    \"disable_stitch\": false,\n    \"video_cover_timestamp_ms\": 1000\n  },\n  \"source_info\": {\n    \"source\": \"FILE_UPLOAD\",\n    \"video_size\": parseInt($('Get Video File Size').item.json.stdout.trim()),\n    \"chunk_size\": parseInt($('Get Video File Size').item.json.stdout.trim()),\n    \"total_chunk_count\": 1\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        832,
+        416
+      ],
+      "id": "fd481aae-0b0a-4c0a-83de-4e8c3dd8e93b",
+      "name": "Initialize TikTok Upload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "success-check",
+              "leftValue": "={{ $json.data.error.code }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        416
+      ],
+      "id": "9e69001d-c4a1-4456-b142-a50e31ce5512",
+      "name": "Check TikTok Init"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"publishId\": \"{{ $json.data.publish_id }}\",\n  \"uploadUrl\": \"{{ $json.data.upload_url }}\",\n  \"accessToken\": \"{{ $('TikTok Config').item.json.accessToken }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1280,
+        320
+      ],
+      "id": "7f6a0aed-9282-42be-9227-9d5a750cee8e",
+      "name": "Extract Publish ID"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1712,
+        320
+      ],
+      "id": "45850653-e2ce-4a3e-90cf-677913088028",
+      "name": "Wait for Processing",
+      "webhookId": "tiktok-wait-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/status/fetch/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.accessToken }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"publish_id\": \"{{ $json.publishId }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1936,
+        320
+      ],
+      "id": "cca73393-4916-453c-86c7-2498bee21639",
+      "name": "Check TikTok Status"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"status\": \"success\",\n  \"platform\": \"tiktok\",\n  \"publishId\": \"{{ $json.data.publish_id }}\",\n  \"uploadStatus\": \"{{ $json.data.status }}\",\n  \"publicPostId\": \"{{ $json.data.publicly_available_post_id || 'processing' }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2160,
+        320
+      ],
+      "id": "baa84b9d-249b-43b6-9b8b-7cf935146a8e",
+      "name": "TikTok Success Data"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"status\": \"failed\",\n  \"platform\": \"tiktok\",\n  \"error\": \"{{ $json.data.error.message || 'Unknown error' }}\",\n  \"errorCode\": \"{{ $json.data.error.code || 'unknown' }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1280,
+        512
+      ],
+      "id": "3577fdf6-e30a-452c-8f55-4a6f2d0677bb",
+      "name": "TikTok Failed Data"
+    },
+    {
+      "parameters": {
+        "content": "## 🎬 TikTok Upload Setup\n\n**Before running this workflow:**\n\n1. Start the video file server:\n   - Run: `python C:/whisper-gpu/serve_video.py`\n   - Or use ngrok: `ngrok http 8000`\n\n2. Update TikTok Config node:\n   - Set `videoServerUrl` to your public URL\n   - Example: `http://YOUR_IP:8000/short_1080x1920.mp4`\n   - Or ngrok: `https://abc123.ngrok-free.app/short_1080x1920.mp4`\n\n3. Make sure your access token is fresh\n   - Tokens expire after 24 hours\n   - Use refresh workflow if needed",
+        "height": 400,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        880
+      ],
+      "id": "13d4f00f-02bd-4c3c-b597-c61ad58627b4",
+      "name": "Setup Instructions"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.uploadUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            },
+            {
+              "name": "Content-Length",
+              "value": "={{ $('Read Video File').item.binary.data.fileSize }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1488,
+        320
+      ],
+      "id": "d000a672-3787-483a-9d46-70b59bdcad9e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "command": "stat -c%s /whisper-gpu/out/short_1080x1920.mp4"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        64
+      ],
+      "id": "96ef597f-9568-4f07-9762-b47b44357221",
+      "name": "Get Video File Size"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Check if YouTube URL": {
+      "main": [
+        [
+          {
+            "node": "Reply: Processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Invalid URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply: Processing": {
+      "main": [
+        [
+          {
+            "node": "Extract URL & Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract URL & Settings": {
+      "main": [
+        [
+          {
+            "node": "1. Clean Old Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Clean Old Files": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Download Video": {
+      "main": [
+        [
+          {
+            "node": "3. Prepare Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Prepare Params": {
+      "main": [
+        [
+          {
+            "node": "4. Transcribe + Clip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Transcribe + Clip": {
+      "main": [
+        [
+          {
+            "node": "Read Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Video File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Video File Size",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Upload to YouTube": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check if YouTube URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Title File": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "TikTok Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Reply: Success (Both Platforms)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "2. Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Config": {
+      "main": [
+        [
+          {
+            "node": "Initialize TikTok Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize TikTok Upload": {
+      "main": [
+        [
+          {
+            "node": "Check TikTok Init",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check TikTok Init": {
+      "main": [
+        [
+          {
+            "node": "Extract Publish ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TikTok Failed Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Publish ID": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Processing": {
+      "main": [
+        [
+          {
+            "node": "Check TikTok Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check TikTok Status": {
+      "main": [
+        [
+          {
+            "node": "TikTok Success Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Success Data": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait for Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video File Size": {
+      "main": [
+        [
+          {
+            "node": "Read Title File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "af38c065-a3c1-4522-93d3-f569274e04af",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9b1e2ef6cb97ca1abbbec167c5c7bfe03d152ab654c4c41021e2b9ee08b4e185"
+  },
+  "id": "V6RhdvnGNcCUva5Z",
+  "tags": []
+}
